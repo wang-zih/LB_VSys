@@ -108,7 +108,7 @@ BaseMesh::Point sphericalPoint(double theta,double phi) {
 
 //The mesh vertex corresponding to spherical_point(¦È,¦Õ)
 BaseMesh::VertexHandle sphericalPointHandle(double theta, double phi) {
-	
+//
 }
 //Spherical Function
 void AppMesh::ConstSphere(BaseMesh& VBasisMesh) {
