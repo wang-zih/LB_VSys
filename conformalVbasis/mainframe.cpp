@@ -66,6 +66,7 @@ void AppFrame::updateColorMapping() {
 	int mapVecId=text_spec->text().toInt();
 	cout << "current eigenVector: "<<mapVecId << endl;	
 	//cout << evecs.col(2).transpose() << endl;
+	cout << evecs.col(mapVecId).minCoeff() << "," << evecs.col(mapVecId).maxCoeff() << endl;
 	renderColorMap->ColorMapping(evecs.col(mapVecId).data(), evecs.col(mapVecId).minCoeff(), evecs.col(mapVecId).maxCoeff());
 	renderColorMap->updateGL();
 
@@ -292,6 +293,8 @@ void MainFrame::s_LPcolormap()
 	
 	evalues.reverseInPlace();
 	evecs.rowwise().reverseInPlace();
+	evecs.array().rowwise() /= evalues.transpose().array().sqrt();
+
 
 	cout << evalues.transpose() << endl; cout << endl;
 //===============================================================================	

@@ -78,13 +78,21 @@ Vec3uc convert_color(float& val, float& maxval, float& minval, Vec3uc& minColor,
 	if (abs(maxval - minval) < 1e-6) {
 		return minColor;
 	}
-	float t;
+	if (abs(val - minval) < 1e-6 || abs(val - maxval) < 1e-6) {
+		return Vec3uc(0, 0, 0);
+	}
+
+	float t= (val - minval) / (maxval - minval);
+	return minColor + t*(maxColor - minColor);
+
+	//float t;
 	if (2 * val <= maxval + minval) {
-		t = 2 * (val - minval) / (maxval - minval);
-		return minColor + t*(Vec3uc(255, 255, 255) - minColor);
+		t = 1-2 * (val - minval) / (maxval - minval);
+		return minColor +t*(Vec3uc(255, 255, 255) - minColor);
+		//return Vec3uc(255*t, 255*t, 255);
 	}
 	else {
-		t = 2 * (maxval - val) / (maxval - minval);
+		t = 1- 2 * (maxval - val) / (maxval - minval);
 		return maxColor + t*(Vec3uc(255, 255, 255) - maxColor);
 	}
 }
@@ -107,9 +115,9 @@ BaseMesh::Point sphericalPoint(double theta,double phi) {
 }
 
 //The mesh vertex corresponding to spherical_point(¦È,¦Õ)
-BaseMesh::VertexHandle sphericalPointHandle(double theta, double phi) {
+//BaseMesh::VertexHandle sphericalPointHandle(double theta, double phi) {
 //
-}
+//}
 //Spherical Function
 void AppMesh::ConstSphere(BaseMesh& VBasisMesh) {
 	

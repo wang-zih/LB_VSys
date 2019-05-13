@@ -57,6 +57,26 @@ int fac(int n) {
 	}
 }
 
+//0<=m<=l
+Eigen::MatrixXd Plm(int n,double x)
+{
+	Eigen::MatrixXd P(n, n);
+	const double y = sqrt(1 - x*x);
+
+	int l, m;
+
+	//diagonal recurrences
+	for (l = 1; l < n; ++l)
+		P(l, l) = -(2*l-1)*y*P(l - 1, l - 1);
+
+	//triangular recurrences
+	for (m = 1; m < n; ++m) {
+		P(m + 1, m) = x*(2 * m + m)*P(m, m);
+
+		for (l = m + 2; l < n; ++l)
+			P(l, m) = (x*(2*l-1)*P(l - 1, m) - (l+m-1)*P(l - 2, m))/(l-m);
+	}
+}
 
 double sphericalFunc(int l, int m, double phi, double theta) {
 	double Const = sqrt((2 * l + 1) *fac(l - m) / (4 * M_PI*fac(l + m)));
