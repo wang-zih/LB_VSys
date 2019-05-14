@@ -56,7 +56,7 @@ public:
 
 	void ColorMapping(float* data, float minval, float maxval);
 
-	void ConstSphere(BaseMesh& basisobject);
+	void ConstSphere(BaseMesh& basisobject,int N);
 	void sphericalPara(BaseMesh&);
 	
 	//friend class BasisViewerWidget;

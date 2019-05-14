@@ -72,29 +72,23 @@ void AppMesh::ComputeWeightedGraphLP(SpMatf &Laplace)
 }
 
 Vec3uc convert_color(float& val, float& maxval, float& minval, Vec3uc& minColor,Vec3uc& maxColor) {
-	//float t=(val - minval) / (maxval - minval);
-	//return minColor + t*(maxColor - minColor);
 
 	if (abs(maxval - minval) < 1e-6) {
 		return minColor;
 	}
-	if (abs(val - minval) < 1e-6 || abs(val - maxval) < 1e-6) {
+
+	if (val == minval || val == maxval) {
 		return Vec3uc(0, 0, 0);
 	}
 
 	float t= (val - minval) / (maxval - minval);
-	return minColor + t*(maxColor - minColor);
+	Vec3uc middColor(255, 255, 255);
 
-	//float t;
-	if (2 * val <= maxval + minval) {
-		t = 1-2 * (val - minval) / (maxval - minval);
-		return minColor +t*(Vec3uc(255, 255, 255) - minColor);
-		//return Vec3uc(255*t, 255*t, 255);
-	}
-	else {
-		t = 1- 2 * (maxval - val) / (maxval - minval);
-		return maxColor + t*(Vec3uc(255, 255, 255) - maxColor);
-	}
+	if (t < 0.5)
+		return minColor + 2 * t*(middColor - minColor);
+	else if(t>=0.5)
+		return maxColor + 2*(1-t)*(middColor - maxColor);
+
 }
 
 void AppMesh::ColorMapping(float* data, float minval, float maxval) {
@@ -119,14 +113,15 @@ BaseMesh::Point sphericalPoint(double theta,double phi) {
 //
 //}
 //Spherical Function
-void AppMesh::ConstSphere(BaseMesh& VBasisMesh) {
+//vId=(i - 1)*n2 + j + 1;
+void AppMesh::ConstSphere(BaseMesh& VBasisMesh, int N) {
 	
 	VBasisMesh.request_face_normals();
 	VBasisMesh.request_vertex_normals();
 	 
-	int n1 = 10, n2 = 10, vId;
+	int n1 = N, n2 = N, vId;
 	const int t = n1*(n2-1)+2;
-	BaseMesh::VertexHandle vhandle[92];
+	BaseMesh::VertexHandle *vhandle=new BaseMesh::VertexHandle[t];
 	vhandle[0] = VBasisMesh.add_vertex(BaseMesh::Point(0.0, 0.0, 1.0));
 	for (int i = 1; i < n1; ++i) {//(i*pi/n1, j*2pi/n2)
 		for (int j = 0; j < n2; ++j) {
@@ -184,7 +179,7 @@ void AppMesh::ConstSphere(BaseMesh& VBasisMesh) {
 	VBasisMesh.add_face(face_vhandles);
 	VBasisMesh.update_face_normals();
 	VBasisMesh.update_vertex_normals();
-
+	delete[] vhandle;
 }
 
 void AppMesh::sphericalPara(BaseMesh& VBasisMesh) {

@@ -51,7 +51,7 @@ void AppFrame::setViewer(QString &name, Eigen::MatrixXf &evecs_data) {
 	renderColorMap->ColorMapping(evecs.col(mapVecId).data(), evecs.col(mapVecId).minCoeff(), evecs.col(mapVecId).maxCoeff());
 	//============================== render Basis ==================
 	BaseMesh basisobject;
-	renderColorMap->ConstSphere(basisobject);
+	renderColorMap->ConstSphere(basisobject,50);
 	//renderColorMap->sphericalPara(basisobject);
 
 	renderBasis = new MeshViewerWidgetT<BaseMesh>();

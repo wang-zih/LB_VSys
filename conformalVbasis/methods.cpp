@@ -57,7 +57,15 @@ int fac(int n) {
 	}
 }
 
-//0<=m<=l
+/*
+Input: 
+n: number of degree l and order m;
+x: value of the spherical func.
+Output: 
+lower triangle matrix.
+each row indicate one degree l; 
+each column indicate one order m.
+*/
 Eigen::MatrixXd Plm(int n,double x)
 {
 	Eigen::MatrixXd P(n, n);
@@ -76,6 +84,7 @@ Eigen::MatrixXd Plm(int n,double x)
 		for (l = m + 2; l < n; ++l)
 			P(l, m) = (x*(2*l-1)*P(l - 1, m) - (l+m-1)*P(l - 2, m))/(l-m);
 	}
+	return P;
 }
 
 double sphericalFunc(int l, int m, double phi, double theta) {
