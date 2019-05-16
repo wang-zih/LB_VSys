@@ -71,35 +71,17 @@ void AppMesh::ComputeWeightedGraphLP(SpMatf &Laplace)
 	Laplace.makeCompressed();
 }
 
-Vec3uc convert_color(float& val, float& maxval, float& minval, Vec3uc& minColor,Vec3uc& maxColor) {
-
-	if (abs(maxval - minval) < 1e-6) {
-		return minColor;
-	}
-
-	if (val == minval || val == maxval) {
-		return Vec3uc(0, 0, 0);
-	}
-
-	float t= (val - minval) / (maxval - minval);
-	Vec3uc middColor(255, 255, 255);
-
-	if (t < 0.5)
-		return minColor + 2 * t*(middColor - minColor);
-	else if(t>=0.5)
-		return maxColor + 2*(1-t)*(middColor - maxColor);
-
-}
 
 void AppMesh::ColorMapping(float* data, float minval, float maxval) {
 	std::cout << maxval - minval << std::endl;
-	Vec3uc maxColor(255, 0, 0), minColor(0, 0, 255);
+	OpenMesh::Vec3uc maxColor(255, 0, 0), minColor(0, 0, 255);
 	typename BaseMesh::ConstVertexIter vIt(mesh_.vertices_begin()), vEnd(mesh_.vertices_end());
 
 	for (; vIt != vEnd; ++vIt) {
 		mesh_.set_color(*vIt, convert_color(data[vIt->idx()], minval, maxval, minColor, maxColor));
 	}
 }
+
 
 BaseMesh::Point sphericalPoint(double theta,double phi) {
 	double x = sin(theta)*cos(phi);
@@ -192,6 +174,10 @@ void AppMesh::sphericalPara(BaseMesh& VBasisMesh) {
 	}
 	centroid /= mesh_.n_vertices();
 
+	
+	OpenMesh::FPropHandleT<float> cogs;
+	for (BaseMesh::FaceIter fIt = VBasisMesh.faces_begin(); fIt != VBasisMesh.faces_end(); ++fIt)
+		VBasisMesh.property(cogs, fIt)=1;
 
 	//std::function<double(double, double)> SphericalFunction;
 }

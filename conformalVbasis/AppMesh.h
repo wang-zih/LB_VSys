@@ -6,24 +6,11 @@
 #include<QtWidgets\QFileDialog>
 #include<QtCore\QString>
 #include <OpenMesh/Tools/Utils/Timer.hh>
-#include<OpenMesh\Core\Mesh\TriMesh_ArrayKernelT.hh>
+
 #include<Eigen\Sparse>
 #include"MeshViewerWidgetT.h"
-//#include"BasisViewerWidge.h"
+#include"methods.h"
 
-using namespace OpenMesh::Attributes;
-
-struct MyTraits :public OpenMesh::DefaultTraits
-{
-	//typedef OpenMesh::Vec3d Point;//double-value points
-	VertexAttributes(OpenMesh::Attributes::Normal |
-					 OpenMesh::Attributes::Color);
-	//FaceAttributes(OpenMesh::Attributes::Normal);
-	//VertexAttributes(OpenMesh::Attributes::Color);
-	HalfedgeAttributes(OpenMesh::Attributes::PrevHalfedge);
-};
-
-typedef OpenMesh::TriMesh_ArrayKernelT<MyTraits> BaseMesh;
 
 class AppMesh :public MeshViewerWidgetT<BaseMesh>
 {
@@ -59,7 +46,6 @@ public:
 	void ConstSphere(BaseMesh& basisobject,int N);
 	void sphericalPara(BaseMesh&);
 	
-	//friend class BasisViewerWidget;
 private:
 	OpenMesh::IO::Options _options;
 	QString fileName;

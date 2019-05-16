@@ -37,6 +37,25 @@ void EigenDecomposition(SpMatf &M, int nev, float sigma, Eigen::VectorXf &evalue
 	std::cout << "||AU - UD||_inf = " <<err<< std::endl;
 }
 
+
+
+OpenMesh::Vec3uc convert_color(float& val, float& maxval, float& minval, OpenMesh::Vec3uc& minColor, OpenMesh::Vec3uc& maxColor) {
+
+	if (abs(maxval - minval) < 1e-6) {
+		return minColor;
+	}
+
+	float t = (val - minval) / (maxval - minval);
+	OpenMesh::Vec3uc middColor(255, 255, 255);
+
+	if (t < 0.5)
+		return minColor + 2 * t*(middColor - minColor);
+	else if (t >= 0.5)
+		return maxColor + 2 * (1 - t)*(middColor - maxColor);
+
+}
+
+
 //(x,y,z)-centroid   ->(r,phi,theta)
 //range: theta in (0,pi);  phi in (0,2pi)
 void ToSphericalCoordinate(Eigen::Vector3f& dir, double& r, double& phi, double& theta) {

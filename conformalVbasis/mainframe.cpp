@@ -24,6 +24,7 @@ AppFrame::AppFrame(QWidget *parent) {
 	text_spec->setMaximumWidth(100);
 	cb_mode->addItem("Points", 1);cb_mode->addItem("Wireframe", 2); 
 	cb_mode->addItem("Solid Flat", 3);cb_mode->addItem("Solid Smooth", 4);
+	cb_mode->addItem("Solid Colored Faces", 5);
 	connect(bt_reload, SIGNAL(clicked()), this, SLOT(updateColorMapping()));	
 }
 
@@ -51,11 +52,13 @@ void AppFrame::setViewer(QString &name, Eigen::MatrixXf &evecs_data) {
 	renderColorMap->ColorMapping(evecs.col(mapVecId).data(), evecs.col(mapVecId).minCoeff(), evecs.col(mapVecId).maxCoeff());
 	//============================== render Basis ==================
 	BaseMesh basisobject;
-	renderColorMap->ConstSphere(basisobject,50);
-	//renderColorMap->sphericalPara(basisobject);
+	renderColorMap->ConstSphere(basisobject,100);
+	renderColorMap->sphericalPara(basisobject);
 
 	renderBasis = new MeshViewerWidgetT<BaseMesh>();
 	renderBasis->set_mesh(basisobject);
+
+	renderBasis->add_draw_mode("Solid Colored Faces");
 	renderBasis->set_draw_mode(3);
 
 	cout << "vector:"<< basisobject.n_vertices() << endl;
