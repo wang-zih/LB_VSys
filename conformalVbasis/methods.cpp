@@ -37,7 +37,9 @@ void EigenDecomposition(SpMatf &M, int nev, float sigma, Eigen::VectorXf &evalue
 	std::cout << "||AU - UD||_inf = " <<err<< std::endl;
 }
 
-
+float isSymmetry(SpMatf& M) {
+	return (M - (SpMatf)(M.transpose())).cwiseAbs().sum();
+}
 
 OpenMesh::Vec3uc convert_color(float& val, float& maxval, float& minval, OpenMesh::Vec3uc& minColor, OpenMesh::Vec3uc& maxColor) {
 

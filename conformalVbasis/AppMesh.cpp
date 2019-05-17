@@ -57,7 +57,9 @@ void AppMesh::ComputeWeightedGraphLP(SpMatf &Laplace)
 			
 			sum_weight += weight;
 			voronoi_area[vc] +=computeVoroArea(mesh_, *vohIt, cot_tmp, cot_alpha);
-
+			if (isnan<float>(weight)) {
+				std::cout << "error:" << vc << " " << vp << std::endl;
+			}
 			Laplace.insert(vc, vp) = -weight;
 		}
 		Laplace.insert(vc, vc) = sum_weight;
@@ -99,6 +101,7 @@ BaseMesh::Point sphericalPoint(double theta,double phi) {
 void AppMesh::ConstSphere(BaseMesh& VBasisMesh, int N) {
 	
 	VBasisMesh.request_face_normals();
+	VBasisMesh.request_face_colors();
 	VBasisMesh.request_vertex_normals();
 	 
 	int n1 = N, n2 = N, vId;
@@ -174,10 +177,15 @@ void AppMesh::sphericalPara(BaseMesh& VBasisMesh) {
 	}
 	centroid /= mesh_.n_vertices();
 
-	
+
 	OpenMesh::FPropHandleT<float> cogs;
-	for (BaseMesh::FaceIter fIt = VBasisMesh.faces_begin(); fIt != VBasisMesh.faces_end(); ++fIt)
-		VBasisMesh.property(cogs, fIt)=1;
+	VBasisMesh.add_property(cogs);
+
+	for (BaseMesh::FaceIter fIt = VBasisMesh.faces_begin(); fIt != VBasisMesh.faces_end(); ++fIt) 
+	{
+		VBasisMesh.property(cogs, *fIt);
+		VBasisMesh.set_color(*fIt, Vec3uc(255, 0, 0));
+	}
 
 	//std::function<double(double, double)> SphericalFunction;
 }

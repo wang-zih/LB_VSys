@@ -60,7 +60,7 @@ void AppFrame::setViewer(QString &name, Eigen::MatrixXf &evecs_data) {
 
 	renderBasis->add_draw_mode("Solid Colored Faces");
 	renderBasis->set_draw_mode(3);
-
+	
 	cout << "vector:"<< basisobject.n_vertices() << endl;
 }
 
@@ -287,6 +287,8 @@ void MainFrame::s_LPcolormap()
 	t1.start();
 	renderWidget->ComputeWeightedGraphLP(Laplace);
 	t1.stop();
+	cout << Laplace.norm() << endl;
+	cout << isSymmetry(Laplace) << endl;
 	cout << "LP time~" << t1.as_string() << endl;
 
 	t2.start();

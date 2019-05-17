@@ -5,6 +5,8 @@
 #include<OpenMesh\Core\Mesh\TriMesh_ArrayKernelT.hh>
 typedef Eigen::SparseMatrix<float> SpMatf;
 void EigenDecomposition(SpMatf &M, int nev, float sigma, Eigen::VectorXf &evalues, Eigen::MatrixXf &evecs);
+float isSymmetry(SpMatf &M);
+
 
 using namespace OpenMesh::Attributes;
 
