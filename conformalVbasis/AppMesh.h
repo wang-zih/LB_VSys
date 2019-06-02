@@ -44,7 +44,12 @@ public:
 	void ColorMapping(float* data, float minval, float maxval);
 
 	void ConstSphere(BaseMesh& basisobject,int N);
-	void sphericalPara(BaseMesh&);
+	void sphericalPara(BaseMesh&, float* vals, Eigen::VectorXf&);
+	void sphereConformalMapping(VPropHandleT<Vec3f> &newPts);
+
+	int RemoveDumplicateFace();
+	int RemoveDumplicateVertex();
+	void RemoveDumplicateItems();
 	
 private:
 	OpenMesh::IO::Options _options;

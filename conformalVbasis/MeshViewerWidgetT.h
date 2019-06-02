@@ -29,7 +29,7 @@ public:
 
 	bool open_mesh(const char* _filename, OpenMesh::IO::Options _opt);
 	void set_mesh(Mesh& outermesh) { mesh_ = outermesh; };
-
+	
 
 protected:
 

@@ -27,7 +27,7 @@ public:
 
 private:
 	AppMesh *renderColorMap;
-	MeshViewerWidgetT<BaseMesh> *renderBasis;
+	AppMesh *renderBasis;
 
 	QGridLayout* Applayout;
 	QLabel* lb_spec;
@@ -56,7 +56,7 @@ public:
 	void s_Render(QAction *action);
 	void s_Material();
 	void s_LPcolormap();
-	//void s_Conformal();
+	void s_RemoveDumplicateElements();
 	
 
 private:
@@ -78,6 +78,7 @@ private:
 	QActionGroup* act_RenderType; //use QActionGroup to manage them
 	QAction* act_Material;
 	QAction* act_LP;
+	QAction* act_Remove;
 	///////////////////////////////////////////////
 
 	QLabel *sliderLabel_specx;

@@ -47,21 +47,35 @@ void AppFrame::setViewer(QString &name, Eigen::MatrixXf &evecs_data) {
 	renderColorMap->add_draw_mode("Colored Vertices");
 	renderColorMap->set_draw_mode(5);
 	int mapVecId = 0;
-	
+
 	evecs = evecs_data;
 	renderColorMap->ColorMapping(evecs.col(mapVecId).data(), evecs.col(mapVecId).minCoeff(), evecs.col(mapVecId).maxCoeff());
-	//============================== render Basis ==================
-	BaseMesh basisobject;
-	renderColorMap->ConstSphere(basisobject,100);
-	renderColorMap->sphericalPara(basisobject);
+	//==============================sphere mapping=================
 
-	renderBasis = new MeshViewerWidgetT<BaseMesh>();
+	OpenMesh::Utils::Timer t1;
+	t1.start();
+	OpenMesh::VPropHandleT<Vec3f> mapping;
+	renderColorMap->sphereConformalMapping(mapping);
+	//renderColorMap->set_draw_mode(2);
+	t1.stop();
+	cout << "sphere mapping time~" << t1.as_string() << endl;
+
+	//============================== render Basis ==================
+
+	renderBasis = new AppMesh();
+
+	BaseMesh basisobject;
+	renderBasis->ConstSphere(basisobject,100);
 	renderBasis->set_mesh(basisobject);
+	cout << "vector:" << basisobject.n_vertices() << endl;
 
 	renderBasis->add_draw_mode("Solid Colored Faces");
 	renderBasis->set_draw_mode(3);
 	
-	cout << "vector:"<< basisobject.n_vertices() << endl;
+
+	Eigen::VectorXf sphereVal(basisobject.n_vertices());
+	renderColorMap->sphericalPara(basisobject, evecs.col(mapVecId).data(),sphereVal);
+	renderBasis->ColorMapping(sphereVal.data(), sphereVal.minCoeff(), sphereVal.maxCoeff());
 }
 
 
@@ -121,6 +135,7 @@ void MainFrame::Create_Menus()
 	renderMenu->addAction(act_Material);
 
 	application = menuBar()->addMenu(tr("Applications"));
+	application->addAction(act_Remove);
 	application->addAction(act_LP);
 }
 
@@ -184,6 +199,9 @@ void MainFrame::Create_Actions()
 	act_Material = new QAction(QIcon("imgs/Material.png"),QString("Apply Material"), this);
 	connect(act_Material, SIGNAL(triggered()), this, SLOT(s_Material()));
 ///////////////////////////////Applications/////////////////////////////////////////////
+	act_Remove= new QAction(QString("Remove Dumplicated"), this);
+	connect(act_Remove, SIGNAL(triggered()), this, SLOT(s_RemoveDumplicateElements()));
+
 	act_LP= new QAction(QString("Laplace EigenDec"), this);
 	connect(act_LP, SIGNAL(triggered()), this, SLOT(s_LPcolormap()));
 }
@@ -263,6 +281,10 @@ void MainFrame::s_Material()
 
 }
 
+void MainFrame::s_RemoveDumplicateElements()
+{
+	renderWidget->RemoveDumplicateItems();
+}
 void MainFrame::s_LPcolormap()
 {
 	int n_spectrum = 0;
@@ -284,11 +306,12 @@ void MainFrame::s_LPcolormap()
 	Eigen::VectorXf evalues;
 	Eigen::MatrixXf evecs;
 
+
 	t1.start();
 	renderWidget->ComputeWeightedGraphLP(Laplace);
 	t1.stop();
-	cout << Laplace.norm() << endl;
-	cout << isSymmetry(Laplace) << endl;
+	cout << "LP norm: "<<Laplace.norm() << endl;
+	cout << "LT-L error:"<<isSymmetry(Laplace) << endl;
 	cout << "LP time~" << t1.as_string() << endl;
 
 	t2.start();

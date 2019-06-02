@@ -22,6 +22,6 @@ struct MyTraits :public OpenMesh::DefaultTraits
 typedef OpenMesh::TriMesh_ArrayKernelT<MyTraits> BaseMesh;
 
 OpenMesh::Vec3uc convert_color(float& val, float& maxval, float& minval, OpenMesh::Vec3uc& minColor, OpenMesh::Vec3uc& maxColor);
-
+void ToSphericalCoordinate(Eigen::Vector3f& dir, double& r, double& phi, double& theta);
 
 #endif

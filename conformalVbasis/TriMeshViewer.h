@@ -7,26 +7,14 @@
 #include<QtCore\QString>
 #include"MeshViewerWidgetT.h"
 #include <OpenMesh/Tools/Utils/Timer.hh>
-#include<OpenMesh\Core\Mesh\TriMesh_ArrayKernelT.hh>
+//#include<OpenMesh\Core\Mesh\TriMesh_ArrayKernelT.hh>
+#include"methods.h"
 
-using namespace OpenMesh::Attributes;
-
-struct MyTraits2 :public OpenMesh::DefaultTraits
-{
-	//typedef OpenMesh::Vec3d Point;//double-value points
-	//VertexAttributes(OpenMesh::Attributes::Normal |
-	//				 OpenMesh::Attributes::Color);
-	//FaceAttributes(OpenMesh::Attributes::Normal);
-	HalfedgeAttributes(OpenMesh::Attributes::PrevHalfedge);
-};
-
-typedef OpenMesh::TriMesh_ArrayKernelT<MyTraits2> MyMesh;
-
-class TriMeshViewer:public MeshViewerWidgetT<MyMesh>
+class TriMeshViewer:public MeshViewerWidgetT<BaseMesh>
 {
 	Q_OBJECT
 public:
-	explicit TriMeshViewer(QWidget* parent = 0) : MeshViewerWidgetT<MyMesh>(parent){}
+	explicit TriMeshViewer(QWidget* parent = 0) : MeshViewerWidgetT<BaseMesh>(parent){}
 	OpenMesh::IO::Options& options() { return _options; }
 	void setOptions(const OpenMesh::IO::Options& opts) { _options = opts; }
 
