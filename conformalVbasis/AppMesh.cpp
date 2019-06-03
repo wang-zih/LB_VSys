@@ -222,98 +222,6 @@ void AppMesh::ColorMapping(float* data, float minval, float maxval) {
 	}
 }
 
-
-BaseMesh::Point sphericalPoint(double theta,double phi) {
-	double x = sin(theta)*cos(phi);
-	double y=sin(theta)*sin(phi);
-	double z=cos(theta);
-	return BaseMesh::Point(x, y, z);
-}
-
-Vec2f sphericalParameter(BaseMesh::Point p)
-{
-	double r = p.norm();
-	double theta = acosf(p[2] / r);    //  cos(theta)=z/r
-	double phi = atan2(p[1], p[0]);
-	return Vec2f(theta, phi);
-}
-
-//The mesh vertex corresponding to spherical_point(θ,φ)
-//BaseMesh::VertexHandle sphericalPointHandle(double theta, double phi) {
-//
-//}
-//Spherical Function
-//vId=(i - 1)*n2 + j + 1;
-void AppMesh::ConstSphere(BaseMesh& VBasisMesh, int N) {
-	
-	VBasisMesh.request_face_normals();
-	VBasisMesh.request_face_colors();
-	VBasisMesh.request_vertex_normals();
-	 
-	int n1 = N, n2 = N, vId;
-	const int t = n1*(n2-1)+2;
-	BaseMesh::VertexHandle *vhandle=new BaseMesh::VertexHandle[t];
-	vhandle[0] = VBasisMesh.add_vertex(BaseMesh::Point(0.0, 0.0, 1.0));
-	for (int i = 1; i < n1; ++i) {//(i*pi/n1, j*2pi/n2)
-		for (int j = 0; j < n2; ++j) {
-			vId=(i - 1)*n2 + j + 1;
-			vhandle[vId] = VBasisMesh.add_vertex(sphericalPoint(i*M_PI / n1, j * 2 * M_PI / n2));
-		}	
-	}
-	vhandle[n1*n2-n2+1]= VBasisMesh.add_vertex(BaseMesh::Point(0.0, 0.0, -1.0));
-
-	std::vector<BaseMesh::VertexHandle> face_vhandles;
-	for (int j = 0; j < n2-1; ++j) {
-		face_vhandles.clear();
-		face_vhandles.push_back(vhandle[0]); face_vhandles.push_back(vhandle[j+1]); face_vhandles.push_back(vhandle[j+2]);
-		VBasisMesh.add_face(face_vhandles);
-	}
-	face_vhandles.clear();
-	face_vhandles.push_back(vhandle[0]); face_vhandles.push_back(vhandle[n2]); face_vhandles.push_back(vhandle[1]);
-	VBasisMesh.add_face(face_vhandles);
-	for (int i = 1; i < n1-1; ++i) {
-		for (int j = 0; j < n2 - 1; ++j) {
-			//(i,j)-(i+1,j)-(i+1,j+1)
-			//(i+1,j+1)-(i,j+1)-(i,j)
-			face_vhandles.clear();
-			face_vhandles.push_back(vhandle[(i - 1)*n2 + j + 1]); face_vhandles.push_back(vhandle[i*n2 + j + 1]); 
-			face_vhandles.push_back(vhandle[i*n2 + j + 2]);
-			VBasisMesh.add_face(face_vhandles);
-			face_vhandles.clear();
-			face_vhandles.push_back(vhandle[i*n2 + j + 2]); face_vhandles.push_back(vhandle[(i - 1)*n2 + j + 2]);
-			face_vhandles.push_back(vhandle[(i - 1)*n2 + j + 1]);
-			VBasisMesh.add_face(face_vhandles);
-		}
-		//j=n2-1 (i,n2-1)-(i+1,n2-1)-(i+1,0)
-		//(i+1,0)-(i,0)-(i,n2-1)
-		//(i - 1)*n2 + j + 1
-		face_vhandles.clear();
-		face_vhandles.push_back(vhandle[(i - 1)*n2 + n2]); face_vhandles.push_back(vhandle[i*n2 + n2]);
-		face_vhandles.push_back(vhandle[i*n2 + 1]);
-		VBasisMesh.add_face(face_vhandles);
-		face_vhandles.clear();
-		face_vhandles.push_back(vhandle[i*n2 + 1]); face_vhandles.push_back(vhandle[(i - 1)*n2 + 1]);
-		face_vhandles.push_back(vhandle[(i - 1)*n2 + n2]);
-		VBasisMesh.add_face(face_vhandles);
-	}
-	for (int j = 0; j < n2 - 1; ++j) {
-		//(n1 - 2)*n2 + j + 1
-		face_vhandles.clear();
-		face_vhandles.push_back(vhandle[n1*n2 - n2 + 1]); face_vhandles.push_back(vhandle[(n1 - 2)*n2 + j + 2]);
-		face_vhandles.push_back(vhandle[(n1 - 2)*n2 + j + 1]);
-		VBasisMesh.add_face(face_vhandles);
-	}
-	face_vhandles.clear();
-	face_vhandles.push_back(vhandle[n1*n2 - n2 + 1]); 
-	face_vhandles.push_back(vhandle[n1*n2 - 2 * n2 + 1]);face_vhandles.push_back(vhandle[n1*n2 - n2]); 
-
-	VBasisMesh.add_face(face_vhandles);
-	VBasisMesh.update_face_normals();
-	VBasisMesh.update_vertex_normals();
-	delete[] vhandle;
-}
-
-
 //computing conformal structures of surfaces
 void AppMesh::sphereConformalMapping(VPropHandleT<Vec3f> &newPts) {
 	//parameter
@@ -322,7 +230,8 @@ void AppMesh::sphereConformalMapping(VPropHandleT<Vec3f> &newPts) {
 
 
 	OpenMesh::VPropHandleT<Vec3f> Laplace;
-	mesh_.add_property(newPts);
+	mesh_.add_property(newPts,"vnewPts");
+	mesh_.property(newPts).set_persistent(true);
 	mesh_.add_property(Laplace);
 
 	BaseMesh::VertexIter vIt, vEnd(mesh_.vertices_end());
@@ -430,61 +339,78 @@ void AppMesh::sphereConformalMapping(VPropHandleT<Vec3f> &newPts) {
 		oldE = newE;
 	}
 	
+	mesh_.remove_property(Laplace);
 	//==============================
 
-	for (vIt = mesh_.vertices_begin(); vIt != vEnd; ++vIt)
+	/*for (vIt = mesh_.vertices_begin(); vIt != vEnd; ++vIt)
 	{
 		mesh_.point(*vIt) = mesh_.property(newPts, *vIt);
-	}
+	}*/
 
 }
 
 
 //p在fh中的面积坐标
-float barycentricValue(BaseMesh &mesh, float* vals, FaceHandle fh,Vec3f p)
+float barycentricValue(BaseMesh &mesh, VPropHandleT<Vec3f> &newPts, float* vals, FaceHandle &fh,Vec3f p)
 {
 	float val[3];
 	BaseMesh::ConstFaceVertexIter fv_it(mesh.cfv_iter(fh));
-	const Vec3f& p0(mesh.point(*fv_it)); val[0] = vals[fv_it->idx()]; ++fv_it;
-	const Vec3f& p1(mesh.point(*fv_it)); val[1] = vals[fv_it->idx()]; ++fv_it;
-	const Vec3f& p2(mesh.point(*fv_it)); val[2] = vals[fv_it->idx()];
+	const Vec3f& p0(mesh.property(newPts, (*fv_it))); val[0] = vals[fv_it->idx()]; ++fv_it;
+	const Vec3f& p1(mesh.property(newPts, (*fv_it))); val[1] = vals[fv_it->idx()]; ++fv_it;
+	const Vec3f& p2(mesh.property(newPts, (*fv_it))); val[2] = vals[fv_it->idx()];
 	Vec3f p1p0(p1 - p0), p2p0(p2-p0);
 
+	Vec3f facen= mesh.calc_face_normal(fh);
 	float area2 = cross(p1p0, p2p0).norm();
+	
+	float w0 = dot(facen, cross(p1 - p, p2 - p)) / area2;
+	float w1 = dot(facen, cross(p2 - p, p0 - p)) / area2;
+	float w2 = dot(facen, cross(p0 - p, p1 - p)) / area2;
 
-	float w0 = cross(p1 - p, p2 - p).norm() / area2;
-	float w1 = cross(p0 - p, p2 - p).norm() / area2;
-	float w2 = cross(p0 - p, p1 - p).norm() / area2;
-
+	
+	std::cout << "weight " << w0 + w1 + w2 << std::endl;
 	return w0*val[0] + w1*val[1] + w2*val[2];
+}
 
+Vec3f calc_conformalCentroid(BaseMesh& mesh, VPropHandleT<Vec3f> &newPts, FaceHandle &fh)
+{
+	Vec3f pt;
+	vectorize(pt, 0);
+	float valence = 0.0f;
+	for (BaseMesh::FaceVertexIter fvIt = mesh.fv_begin(fh); fvIt.is_valid(); ++fvIt, valence += 1.0f)
+	{
+		pt += mesh.property(newPts, fvIt.handle());
+	}
+	pt /= valence;
+	return pt;
 }
 
 //blended intrinc mapping 看GMDS扩散是否有帮助
 //Color mapping of the sphere by Inverse of the conformal mapping
-void AppMesh::sphericalPara(BaseMesh& VBasisMesh, float* vals, Eigen::VectorXf& sphereVal) {
+void AppMesh::sphericalPara(VPropHandleT<Vec3f> &newPts, BaseMesh& VBasisMesh, float* vals, Eigen::VectorXf& sphereVal) {
 	
 	BaseMesh::VertexIter vIt;
 	BaseMesh::FaceIter fIt;
 
-
 	FPropHandleT<Vec3f> centroids;
 	mesh_.add_property(centroids);
+
 	for (fIt = mesh_.faces_begin(); fIt != mesh_.faces_end(); ++fIt) {//after mapping, the region of each tri
-		mesh_.property(centroids, *fIt) = mesh_.calc_face_centroid(*fIt);
+		mesh_.property(centroids, *fIt) = calc_conformalCentroid(mesh_, newPts, fIt.handle());//mesh_.calc_face_centroid(*fIt);
 	}
 	
 	
 	float min = 100000,tmp;
 	BaseMesh::FaceHandle facebel;
 	for (vIt = VBasisMesh.vertices_begin(); vIt != VBasisMesh.vertices_end(); ++vIt) {//the corresponding tri of each vertex
-		
+		min = 100000;
 		for (fIt = mesh_.faces_begin(); fIt != mesh_.faces_end(); ++fIt) {
 			tmp=sqrnorm(VBasisMesh.point(*vIt) - mesh_.property(centroids, *fIt));
-			if (tmp < min){min = tmp; facebel = *fIt;}
+			if (tmp < min){min = tmp; facebel = fIt.handle();}
 		}
-		sphereVal(vIt->idx())= barycentricValue(mesh_, vals, facebel, VBasisMesh.point(*vIt));	
+		//std::cout << "min " << min << " "<<facebel<<std::endl;
+		sphereVal(vIt->idx())= barycentricValue(mesh_, newPts, vals, facebel, VBasisMesh.point(*vIt));
 	}
-	
-
+	mesh_.remove_property(centroids);
+	//mesh_.remove_property(newPts);
 }

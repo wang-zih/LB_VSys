@@ -18,25 +18,28 @@ using std::endl;
 
 AppFrame::AppFrame(QWidget *parent) {
 	lb_spec = new QLabel("Choice Id");
-	text_spec = new QLineEdit("0");
+	text_spec = new QLineEdit("1");
 	bt_reload = new QPushButton("reload");
+	bt_sphereMap = new QPushButton("sphereMap");
 	cb_mode = new QComboBox();
 	text_spec->setMaximumWidth(100);
 	cb_mode->addItem("Points", 1);cb_mode->addItem("Wireframe", 2); 
 	cb_mode->addItem("Solid Flat", 3);cb_mode->addItem("Solid Smooth", 4);
-	cb_mode->addItem("Solid Colored Faces", 5);
-	connect(bt_reload, SIGNAL(clicked()), this, SLOT(updateColorMapping()));	
+	cb_mode->setCurrentIndex(2);
+	connect(bt_reload, SIGNAL(clicked()), this, SLOT(updateColorMapping()));
+	connect(bt_sphereMap, SIGNAL(clicked()), this, SLOT(CalcSphereMapping()));
 }
 
 void AppFrame::setControlLayout() {
 	Applayout = new QGridLayout();
-	Applayout->addWidget(renderColorMap, 0, 0, 1, 2);
-	Applayout->addWidget(renderBasis, 0, 2, 1, 2);
+	Applayout->addWidget(renderColorMap, 0, 0, 1, 3);
+	Applayout->addWidget(renderBasis, 0, 3, 1, 2);
 
-	Applayout->addWidget(lb_spec, 1, 0,1,1);
-	Applayout->addWidget(text_spec,1,1, 1, 1);
-	Applayout->addWidget(cb_mode, 1, 2, 1, 1);
-	Applayout->addWidget(bt_reload,1,3, 1, 1);
+	Applayout->addWidget(bt_sphereMap, 1, 0, 1, 1);
+	Applayout->addWidget(lb_spec,      1, 1, 1, 1);
+	Applayout->addWidget(text_spec,    1, 2, 1, 1);
+	Applayout->addWidget(cb_mode,      1, 3, 1, 1);
+	Applayout->addWidget(bt_reload,    1, 4, 1, 1);
 	setLayout(Applayout);
 	setGeometry(300, 300, 600, 600);
 }
@@ -46,48 +49,57 @@ void AppFrame::setViewer(QString &name, Eigen::MatrixXf &evecs_data) {
 	renderColorMap->open_mesh_gui(name);
 	renderColorMap->add_draw_mode("Colored Vertices");
 	renderColorMap->set_draw_mode(5);
-	int mapVecId = 0;
+	int mapVecId = 1;
 
 	evecs = evecs_data;
 	renderColorMap->ColorMapping(evecs.col(mapVecId).data(), evecs.col(mapVecId).minCoeff(), evecs.col(mapVecId).maxCoeff());
-	//==============================sphere mapping=================
 
+	renderBasis = new AppMesh();
+
+	BaseMesh sphereMesh;
+	ConstSphere(sphereMesh, 100);
+	renderBasis->set_mesh(sphereMesh);
+	cout << "vector:" << sphereMesh.n_vertices() << endl;
+
+	renderBasis->add_draw_mode("Colored Vertices");
+	renderBasis->set_draw_mode(3);
+	
+}
+
+void AppFrame::CalcSphereMapping() {
+	//==============================sphere mapping=================
 	OpenMesh::Utils::Timer t1;
 	t1.start();
-	OpenMesh::VPropHandleT<Vec3f> mapping;
+	VPropHandleT<Vec3f> mapping;
+	setSphereMapping(mapping);
 	renderColorMap->sphereConformalMapping(mapping);
-	//renderColorMap->set_draw_mode(2);
 	t1.stop();
 	cout << "sphere mapping time~" << t1.as_string() << endl;
 
 	//============================== render Basis ==================
-
-	renderBasis = new AppMesh();
-
-	BaseMesh basisobject;
-	renderBasis->ConstSphere(basisobject,100);
-	renderBasis->set_mesh(basisobject);
-	cout << "vector:" << basisobject.n_vertices() << endl;
-
-	renderBasis->add_draw_mode("Solid Colored Faces");
-	renderBasis->set_draw_mode(3);
-	
-
-	Eigen::VectorXf sphereVal(basisobject.n_vertices());
-	renderColorMap->sphericalPara(basisobject, evecs.col(mapVecId).data(),sphereVal);
+	int mapVecId = 1;
+	Eigen::VectorXf sphereVal(renderBasis->get_mesh().n_vertices());
+	renderColorMap->sphericalPara(mapping, renderBasis->get_mesh(), evecs.col(mapVecId).data(),sphereVal);
 	renderBasis->ColorMapping(sphereVal.data(), sphereVal.minCoeff(), sphereVal.maxCoeff());
+	bt_sphereMap->setEnabled(false);
+	cb_mode->addItem("Solid Colored Vertices", 5);
+	renderBasis->set_draw_mode(5);
 }
-
 
 void AppFrame::updateColorMapping() {
 	int mapVecId=text_spec->text().toInt();
 	cout << "current eigenVector: "<<mapVecId << endl;	
-	//cout << evecs.col(2).transpose() << endl;
-	cout << evecs.col(mapVecId).minCoeff() << "," << evecs.col(mapVecId).maxCoeff() << endl;
 	renderColorMap->ColorMapping(evecs.col(mapVecId).data(), evecs.col(mapVecId).minCoeff(), evecs.col(mapVecId).maxCoeff());
 	renderColorMap->updateGL();
-
+	
 	renderBasis->set_draw_mode(cb_mode->currentIndex()+1);
+	if (cb_mode->currentIndex() + 1 == 5) {
+		Eigen::VectorXf sphereVal(renderBasis->get_mesh().n_vertices());
+		renderColorMap->sphericalPara(getSphereMapping(), renderBasis->get_mesh(), evecs.col(mapVecId).data(), sphereVal);
+		//cout << sphereVal.transpose().head(100) << endl;
+		cout << sphereVal.minCoeff() <<","<< sphereVal.maxCoeff() << endl;
+		renderBasis->ColorMapping(sphereVal.data(), sphereVal.minCoeff(), sphereVal.maxCoeff());
+	}
 	renderBasis->updateGL();
 }
 
@@ -137,6 +149,9 @@ void MainFrame::Create_Menus()
 	application = menuBar()->addMenu(tr("Applications"));
 	application->addAction(act_Remove);
 	application->addAction(act_LP);
+
+	databaseApp = menuBar()->addMenu(tr("database"));
+	databaseApp->addAction(act_calcSphereEigenMapForDB);
 }
 
 void MainFrame::Create_ToolBar()
@@ -197,13 +212,20 @@ void MainFrame::Create_Actions()
 	connect(act_RenderType, SIGNAL(triggered(QAction*)), this, SLOT(s_Render(QAction*)));
 
 	act_Material = new QAction(QIcon("imgs/Material.png"),QString("Apply Material"), this);
+	act_Material->setEnabled(false);
 	connect(act_Material, SIGNAL(triggered()), this, SLOT(s_Material()));
 ///////////////////////////////Applications/////////////////////////////////////////////
 	act_Remove= new QAction(QString("Remove Dumplicated"), this);
+	act_Remove->setEnabled(false);
 	connect(act_Remove, SIGNAL(triggered()), this, SLOT(s_RemoveDumplicateElements()));
 
 	act_LP= new QAction(QString("Laplace EigenDec"), this);
+	act_LP->setEnabled(false);
 	connect(act_LP, SIGNAL(triggered()), this, SLOT(s_LPcolormap()));
+////////////////////////////////////database/////////////////////////////////////
+	act_calcSphereEigenMapForDB = new QAction(QString("CalcSphereMap"), this);
+	connect(act_calcSphereEigenMapForDB, SIGNAL(triggered()), this, SLOT(s_CalcSphereEigenMapForDB()));
+
 }
 
 void MainFrame::s_Render(QAction *action) {
@@ -226,6 +248,9 @@ void MainFrame::s_open_mesh_file()
 	if (!fileName.isEmpty()) {
 		renderWidget->open_mesh_gui(fileName);
 		act_RenderType->setEnabled(true);
+		act_Material->setEnabled(true);
+		act_Remove->setEnabled(true);
+		act_LP->setEnabled(true);
 		renderWidget->setFilename(fileName);
 	}
 	
@@ -330,4 +355,46 @@ void MainFrame::s_LPcolormap()
 	AppColorMap->setViewer(renderWidget->modelName(), evecs);
 	AppColorMap->setControlLayout();
 	AppColorMap->show();
+}
+
+
+void MainFrame::s_CalcSphereEigenMapForDB()
+{
+	int n_spectrum = 10;
+	int n1, n2, N;
+	Eigen::SparseMatrix<float> Laplace;
+	Eigen::VectorXf evalues;
+	Eigen::MatrixXf evecs;
+	QString fname;
+
+	OpenMesh::IO::Options opt;
+	opt += OpenMesh::IO::Options::VertexNormal;
+	opt += OpenMesh::IO::Options::FaceNormal;
+
+	VPropHandleT<Vec3f> mapping;
+
+	BaseMesh sphereMesh;
+	ConstSphere(sphereMesh, 100, false);
+	Eigen::VectorXf sphereVal(sphereMesh.n_vertices());
+
+
+	for (int i = 0; i < 10; ++i)
+	{
+		fname = "";
+		AppMesh* model = new AppMesh();
+		model->open_mesh(fname.toLocal8Bit(), opt);
+
+
+		//Lp eigenMap
+		model->ComputeWeightedGraphLP(Laplace);
+		EigenDecomposition(Laplace, n_spectrum, 0, evalues, evecs);
+		evalues.reverseInPlace();
+		evecs.rowwise().reverseInPlace();
+		evecs.array().rowwise() /= evalues.transpose().array().sqrt();
+		//sphere mapping
+		//OpenMesh::VPropHandleT<Vec3f> mapping;
+		model->sphereConformalMapping(mapping);
+		model->sphericalPara(mapping,sphereMesh, evecs.col(1).data(), sphereVal);
+	}
+
 }

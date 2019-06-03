@@ -43,8 +43,7 @@ public:
 
 	void ColorMapping(float* data, float minval, float maxval);
 
-	void ConstSphere(BaseMesh& basisobject,int N);
-	void sphericalPara(BaseMesh&, float* vals, Eigen::VectorXf&);
+	void sphericalPara(VPropHandleT<Vec3f> &, BaseMesh&, float* vals, Eigen::VectorXf&);
 	void sphereConformalMapping(VPropHandleT<Vec3f> &newPts);
 
 	int RemoveDumplicateFace();

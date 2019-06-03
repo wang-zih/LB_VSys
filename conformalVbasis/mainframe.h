@@ -21,9 +21,12 @@ public:
 	void setViewer(AppMesh *outer) { renderColorMap = outer; };
 	void setControlLayout();
 	void setViewer(QString &name, Eigen::MatrixXf &evecs);
+	void setSphereMapping(VPropHandleT<Vec3f>& mapping) { spheremapping=mapping; };
+	VPropHandleT<Vec3f>& getSphereMapping() { return spheremapping; };
 
 	public slots:
 	void updateColorMapping();
+	void CalcSphereMapping();
 
 private:
 	AppMesh *renderColorMap;
@@ -33,8 +36,10 @@ private:
 	QLabel* lb_spec;
 	QLineEdit* text_spec;
 	QComboBox* cb_mode;
+	QPushButton* bt_sphereMap;
 	QPushButton* bt_reload;
 	Eigen::MatrixXf evecs;
+	VPropHandleT<Vec3f> spheremapping;
 };
 
 class MainFrame : public QMainWindow
@@ -57,6 +62,7 @@ public:
 	void s_Material();
 	void s_LPcolormap();
 	void s_RemoveDumplicateElements();
+	void s_CalcSphereEigenMapForDB();
 	
 
 private:
@@ -68,6 +74,7 @@ private:
 	QMenu *fileMenu;
 	QMenu *renderMenu;
 	QMenu *application;
+	QMenu *databaseApp;
 	QToolBar *fileToolBar;
 	QToolBar *renderToolBar;
 	QToolBar *appToolBar;
@@ -79,6 +86,7 @@ private:
 	QAction* act_Material;
 	QAction* act_LP;
 	QAction* act_Remove;
+	QAction* act_calcSphereEigenMapForDB;
 	///////////////////////////////////////////////
 
 	QLabel *sliderLabel_specx;

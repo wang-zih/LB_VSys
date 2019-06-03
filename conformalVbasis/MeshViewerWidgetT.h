@@ -11,8 +11,6 @@ class MeshViewerWidgetT :public QGLViewerWidget
 {
 public:
 	typedef M  Mesh;
-	//typedef OpenMesh::StripifierT<Mesh> MyStripifier;
-
 
 public:
 	MeshViewerWidgetT(QWidget* _parent = 0)
@@ -29,7 +27,7 @@ public:
 
 	bool open_mesh(const char* _filename, OpenMesh::IO::Options _opt);
 	void set_mesh(Mesh& outermesh) { mesh_ = outermesh; };
-	
+	Mesh& get_mesh() { return mesh_; };
 
 protected:
 

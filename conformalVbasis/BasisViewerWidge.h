@@ -20,8 +20,6 @@ public:
 	OpenMesh::IO::Options& options() { return opt_; }
 	void setOptions(const OpenMesh::IO::Options& opts) { opt_ = opts; }
 
-	void draw_basis(const std::string& _draw_mode);
-
 	void glVertex(const typename MeshBasis::VertexHandle _vh)
 	{
 		glVertex3fv(&mesh_.point(_vh)[0]);

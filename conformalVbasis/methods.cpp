@@ -117,3 +117,88 @@ double sphericalFunc(int l, int m, double phi, double theta) {
 
 	return 0;
 }
+
+
+BaseMesh::Point sphericalPoint(double theta, double phi) {
+	double x = sin(theta)*cos(phi);
+	double y = sin(theta)*sin(phi);
+	double z = cos(theta);
+	return BaseMesh::Point(x, y, z);
+}
+
+// The mesh vertex corresponding to spherical_point(¦È, ¦Õ)
+//BaseMesh::VertexHandle sphericalPointHandle(double theta, double phi) {
+//
+//}
+//Spherical Function
+//vId=(i - 1)*n2 + j + 1;
+void ConstSphere(BaseMesh& VBasisMesh, int N, bool cnstTopo) {
+
+	VBasisMesh.request_face_normals();
+	VBasisMesh.request_face_colors();
+	VBasisMesh.request_vertex_normals();
+
+	int n1 = N, n2 = N, vId;
+	const int t = n1*(n2 - 1) + 2;
+	BaseMesh::VertexHandle *vhandle = new BaseMesh::VertexHandle[t];
+	vhandle[0] = VBasisMesh.add_vertex(BaseMesh::Point(0.0, 0.0, 1.0));
+	for (int i = 1; i < n1; ++i) {//(i*pi/n1, j*2pi/n2)
+		for (int j = 0; j < n2; ++j) {
+			vId = (i - 1)*n2 + j + 1;
+			vhandle[vId] = VBasisMesh.add_vertex(sphericalPoint(i*M_PI / n1, j * 2 * M_PI / n2));
+		}
+	}
+	vhandle[n1*n2 - n2 + 1] = VBasisMesh.add_vertex(BaseMesh::Point(0.0, 0.0, -1.0));
+
+	if (cnstTopo) {
+		std::vector<BaseMesh::VertexHandle> face_vhandles;
+		for (int j = 0; j < n2 - 1; ++j) {
+			face_vhandles.clear();
+			face_vhandles.push_back(vhandle[0]); face_vhandles.push_back(vhandle[j + 1]); face_vhandles.push_back(vhandle[j + 2]);
+			VBasisMesh.add_face(face_vhandles);
+		}
+		face_vhandles.clear();
+		face_vhandles.push_back(vhandle[0]); face_vhandles.push_back(vhandle[n2]); face_vhandles.push_back(vhandle[1]);
+		VBasisMesh.add_face(face_vhandles);
+		for (int i = 1; i < n1 - 1; ++i) {
+			for (int j = 0; j < n2 - 1; ++j) {
+				//(i,j)-(i+1,j)-(i+1,j+1)
+				//(i+1,j+1)-(i,j+1)-(i,j)
+				face_vhandles.clear();
+				face_vhandles.push_back(vhandle[(i - 1)*n2 + j + 1]); face_vhandles.push_back(vhandle[i*n2 + j + 1]);
+				face_vhandles.push_back(vhandle[i*n2 + j + 2]);
+				VBasisMesh.add_face(face_vhandles);
+				face_vhandles.clear();
+				face_vhandles.push_back(vhandle[i*n2 + j + 2]); face_vhandles.push_back(vhandle[(i - 1)*n2 + j + 2]);
+				face_vhandles.push_back(vhandle[(i - 1)*n2 + j + 1]);
+				VBasisMesh.add_face(face_vhandles);
+			}
+			//j=n2-1 (i,n2-1)-(i+1,n2-1)-(i+1,0)
+			//(i+1,0)-(i,0)-(i,n2-1)
+			//(i - 1)*n2 + j + 1
+			face_vhandles.clear();
+			face_vhandles.push_back(vhandle[(i - 1)*n2 + n2]); face_vhandles.push_back(vhandle[i*n2 + n2]);
+			face_vhandles.push_back(vhandle[i*n2 + 1]);
+			VBasisMesh.add_face(face_vhandles);
+			face_vhandles.clear();
+			face_vhandles.push_back(vhandle[i*n2 + 1]); face_vhandles.push_back(vhandle[(i - 1)*n2 + 1]);
+			face_vhandles.push_back(vhandle[(i - 1)*n2 + n2]);
+			VBasisMesh.add_face(face_vhandles);
+		}
+		for (int j = 0; j < n2 - 1; ++j) {
+			//(n1 - 2)*n2 + j + 1
+			face_vhandles.clear();
+			face_vhandles.push_back(vhandle[n1*n2 - n2 + 1]); face_vhandles.push_back(vhandle[(n1 - 2)*n2 + j + 2]);
+			face_vhandles.push_back(vhandle[(n1 - 2)*n2 + j + 1]);
+			VBasisMesh.add_face(face_vhandles);
+		}
+		face_vhandles.clear();
+		face_vhandles.push_back(vhandle[n1*n2 - n2 + 1]);
+		face_vhandles.push_back(vhandle[n1*n2 - 2 * n2 + 1]); face_vhandles.push_back(vhandle[n1*n2 - n2]);
+
+		VBasisMesh.add_face(face_vhandles);
+		VBasisMesh.update_face_normals();
+		VBasisMesh.update_vertex_normals();
+	}
+	delete[] vhandle;
+}
