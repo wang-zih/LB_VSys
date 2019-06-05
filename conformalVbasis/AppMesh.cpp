@@ -230,8 +230,8 @@ void AppMesh::sphereConformalMapping(VPropHandleT<Vec3f> &newPts) {
 
 
 	OpenMesh::VPropHandleT<Vec3f> Laplace;
-	mesh_.add_property(newPts,"vnewPts");
-	mesh_.property(newPts).set_persistent(true);
+	mesh_.add_property(newPts);
+	//mesh_.property(newPts).set_persistent(true);
 	mesh_.add_property(Laplace);
 
 	BaseMesh::VertexIter vIt, vEnd(mesh_.vertices_end());
@@ -368,7 +368,7 @@ float barycentricValue(BaseMesh &mesh, VPropHandleT<Vec3f> &newPts, float* vals,
 	float w2 = dot(facen, cross(p0 - p, p1 - p)) / area2;
 
 	
-	std::cout << "weight " << w0 + w1 + w2 << std::endl;
+	//std::cout << "weight " << w0 + w1 + w2 << std::endl;
 	return w0*val[0] + w1*val[1] + w2*val[2];
 }
 

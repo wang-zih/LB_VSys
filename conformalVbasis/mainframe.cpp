@@ -71,7 +71,6 @@ void AppFrame::CalcSphereMapping() {
 	OpenMesh::Utils::Timer t1;
 	t1.start();
 	VPropHandleT<Vec3f> mapping;
-	setSphereMapping(mapping);
 	renderColorMap->sphereConformalMapping(mapping);
 	t1.stop();
 	cout << "sphere mapping time~" << t1.as_string() << endl;
@@ -84,6 +83,8 @@ void AppFrame::CalcSphereMapping() {
 	bt_sphereMap->setEnabled(false);
 	cb_mode->addItem("Solid Colored Vertices", 5);
 	renderBasis->set_draw_mode(5);
+
+	setSphereMapping(mapping);
 }
 
 void AppFrame::updateColorMapping() {
@@ -94,6 +95,8 @@ void AppFrame::updateColorMapping() {
 	
 	renderBasis->set_draw_mode(cb_mode->currentIndex()+1);
 	if (cb_mode->currentIndex() + 1 == 5) {
+
+
 		Eigen::VectorXf sphereVal(renderBasis->get_mesh().n_vertices());
 		renderColorMap->sphericalPara(getSphereMapping(), renderBasis->get_mesh(), evecs.col(mapVecId).data(), sphereVal);
 		//cout << sphereVal.transpose().head(100) << endl;
@@ -361,6 +364,8 @@ void MainFrame::s_LPcolormap()
 void MainFrame::s_CalcSphereEigenMapForDB()
 {
 	int n_spectrum = 10;
+	int databasesize = 1200;
+
 	int n1, n2, N;
 	Eigen::SparseMatrix<float> Laplace;
 	Eigen::VectorXf evalues;
@@ -378,10 +383,12 @@ void MainFrame::s_CalcSphereEigenMapForDB()
 	Eigen::VectorXf sphereVal(sphereMesh.n_vertices());
 
 
-	for (int i = 0; i < 10; ++i)
+	QString dirname = "F:\database\benchmark\shrec15\NonRigid\\";
+	for (int i = 0; i < databasesize; ++i)
 	{
-		fname = "";
+		fname = dirname + "T" + QString::number(i) + ".off";
 		AppMesh* model = new AppMesh();
+		
 		model->open_mesh(fname.toLocal8Bit(), opt);
 
 
