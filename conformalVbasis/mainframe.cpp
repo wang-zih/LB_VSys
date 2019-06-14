@@ -45,19 +45,20 @@ void AppFrame::setControlLayout() {
 }
 void AppFrame::setViewer(QString &name, Eigen::MatrixXf &evecs_data) {
 	//============================== render SignalColormap ==================
+	int mapVecId = 1, sphereReso = 32;
+
 	renderColorMap = new AppMesh();
 	renderColorMap->open_mesh_gui(name);
 	renderColorMap->add_draw_mode("Colored Vertices");
 	renderColorMap->set_draw_mode(5);
-	int mapVecId = 1;
-
+	
 	evecs = evecs_data;
 	renderColorMap->ColorMapping(evecs.col(mapVecId).data(), evecs.col(mapVecId).minCoeff(), evecs.col(mapVecId).maxCoeff());
 
 	renderBasis = new AppMesh();
 
 	BaseMesh sphereMesh;
-	ConstSphere(sphereMesh, 100);
+	ConstSphere(sphereMesh, sphereReso+1,sphereReso);
 	renderBasis->set_mesh(sphereMesh);
 	cout << "vector:" << sphereMesh.n_vertices() << endl;
 
@@ -95,7 +96,6 @@ void AppFrame::updateColorMapping() {
 	
 	renderBasis->set_draw_mode(cb_mode->currentIndex()+1);
 	if (cb_mode->currentIndex() + 1 == 5) {
-
 
 		Eigen::VectorXf sphereVal(renderBasis->get_mesh().n_vertices());
 		renderColorMap->sphericalPara(getSphereMapping(), renderBasis->get_mesh(), evecs.col(mapVecId).data(), sphereVal);
@@ -350,9 +350,14 @@ void MainFrame::s_LPcolormap()
 	evalues.reverseInPlace();
 	evecs.rowwise().reverseInPlace();
 	evecs.array().rowwise() /= evalues.transpose().array().sqrt();
+	
+	Eigen::ArrayXf signs = evecs.row(0).array() / evecs.row(0).array().abs();
+	cout << signs.transpose() << endl;
+	evecs.array().rowwise() *= signs.transpose();
 
-
-	cout << evalues.transpose() << endl; cout << endl;
+	cout <<"Eigen values: "<< evalues.transpose() << endl; cout << endl;
+	cout << "First 3 eigenvectors:" << endl;
+	cout << evecs.topLeftCorner(10,3) << endl;
 //===============================================================================	
 	AppColorMap = new AppFrame();
 	AppColorMap->setViewer(renderWidget->modelName(), evecs);
@@ -363,14 +368,14 @@ void MainFrame::s_LPcolormap()
 
 void MainFrame::s_CalcSphereEigenMapForDB()
 {
-	int n_spectrum = 10;
+	const int n_validSpectrum = 64;
+	const int sphereReso = 32;
 	int databasesize = 1200;
 
-	int n1, n2, N;
 	Eigen::SparseMatrix<float> Laplace;
 	Eigen::VectorXf evalues;
 	Eigen::MatrixXf evecs;
-	QString fname;
+	QString fname,outputname;
 
 	OpenMesh::IO::Options opt;
 	opt += OpenMesh::IO::Options::VertexNormal;
@@ -379,29 +384,57 @@ void MainFrame::s_CalcSphereEigenMapForDB()
 	VPropHandleT<Vec3f> mapping;
 
 	BaseMesh sphereMesh;
-	ConstSphere(sphereMesh, 100, false);
-	Eigen::VectorXf sphereVal(sphereMesh.n_vertices());
+	ConstSphere(sphereMesh, sphereReso + 1, sphereReso, false);
 
+	//the result representation of mesh
+	Eigen::MatrixXf sphereVals(n_validSpectrum, sphereMesh.n_vertices());
 
-	QString dirname = "F:\database\benchmark\shrec15\NonRigid\\";
-	for (int i = 0; i < databasesize; ++i)
+	OpenMesh::Utils::Timer t_all,t; 
+	t_all.start();
+	
+	QString InputDir = "F:/database/benchmark/shrec15/NonRigid/";
+	QString OutputDir = "D:/projects/paper/4/sphereMap_Figure/";
+
+	//databasesize = 3;
+	for (int i = 1023; i < databasesize; ++i)
 	{
-		fname = dirname + "T" + QString::number(i) + ".off";
+		if (i == 942 || i == 978 || i == 1110)
+			continue;
+
+		t.start();
+		fname = InputDir + "T" + QString::number(i) + ".off";
+		outputname = OutputDir+ QString::number(i)+".png";
+		cout << fname.toStdString() << endl;
+
 		AppMesh* model = new AppMesh();
 		
 		model->open_mesh(fname.toLocal8Bit(), opt);
-
-
+	
 		//Lp eigenMap
 		model->ComputeWeightedGraphLP(Laplace);
-		EigenDecomposition(Laplace, n_spectrum, 0, evalues, evecs);
+		EigenDecomposition(Laplace, n_validSpectrum + 1, 0, evalues, evecs);//ignore the first eigenvector
 		evalues.reverseInPlace();
 		evecs.rowwise().reverseInPlace();
 		evecs.array().rowwise() /= evalues.transpose().array().sqrt();
+
+		Eigen::ArrayXf signs = evecs.row(0).array() / evecs.row(0).array().abs();
+		evecs.array().rowwise() *= signs.transpose();//convert the sign of eigenvectors
+
+		cout << evalues.transpose().head(6) << endl;
+		//cout << evecs.topLeftCorner(6,6) << endl;
 		//sphere mapping
-		//OpenMesh::VPropHandleT<Vec3f> mapping;
 		model->sphereConformalMapping(mapping);
-		model->sphericalPara(mapping,sphereMesh, evecs.col(1).data(), sphereVal);
+
+		model->sphericalParaDense(mapping, sphereMesh, evecs.rightCols(n_validSpectrum), sphereVals);
+		//save
+		cout << "matrix: " << sphereMesh.n_vertices()<<" "<< sphereVals.size() << endl;
+		//cout<<sphereVals.leftCols(6) << endl;
+		SaveMatrixToPicture(sphereVals.middleCols(1, sphereVals.cols() - 2), outputname.toStdString());
+		t.stop();
+		cout << "Calculating time~" << t.as_string() << " for T"<<i<<".off"<<endl;
 	}
+	t_all.stop();
+	cout << "Database sphere mapping time~" << t_all.as_string() << endl;
+
 
 }

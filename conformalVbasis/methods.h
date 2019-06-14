@@ -24,5 +24,6 @@ typedef OpenMesh::TriMesh_ArrayKernelT<MyTraits> BaseMesh;
 
 OpenMesh::Vec3uc convert_color(float& val, float& maxval, float& minval, OpenMesh::Vec3uc& minColor, OpenMesh::Vec3uc& maxColor);
 void ToSphericalCoordinate(Eigen::Vector3f& dir, double& r, double& phi, double& theta);
-void ConstSphere(BaseMesh& VBasisMesh, int N, bool cnstTopo = true);
+void ConstSphere(BaseMesh& VBasisMesh, int N1, int N2, bool cnstTopo = true);
+void SaveMatrixToPicture(Eigen::MatrixXf data, std::string name);
 #endif

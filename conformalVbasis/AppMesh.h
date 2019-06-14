@@ -44,6 +44,7 @@ public:
 	void ColorMapping(float* data, float minval, float maxval);
 
 	void sphericalPara(VPropHandleT<Vec3f> &, BaseMesh&, float* vals, Eigen::VectorXf&);
+	void sphericalParaDense(VPropHandleT<Vec3f> &newPts, BaseMesh&, Eigen::MatrixXf, Eigen::MatrixXf&);
 	void sphereConformalMapping(VPropHandleT<Vec3f> &newPts);
 
 	int RemoveDumplicateFace();

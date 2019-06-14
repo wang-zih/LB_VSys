@@ -5,6 +5,9 @@
 #include<iostream>
 #include<complex>
 
+#include<opencv2\core\eigen.hpp>
+#include<opencv2\opencv.hpp>
+
 using namespace Spectra;
 
 void EigenDecomposition(SpMatf &M, int nev, float sigma, Eigen::VectorXf &evalues, Eigen::MatrixXf &evecs) {
@@ -126,20 +129,18 @@ BaseMesh::Point sphericalPoint(double theta, double phi) {
 	return BaseMesh::Point(x, y, z);
 }
 
-// The mesh vertex corresponding to spherical_point(¦È, ¦Õ)
-//BaseMesh::VertexHandle sphericalPointHandle(double theta, double phi) {
-//
-//}
-//Spherical Function
+
+//Sphere Construction
+//N1 is the latitude and N2 is the longitude number
 //vId=(i - 1)*n2 + j + 1;
-void ConstSphere(BaseMesh& VBasisMesh, int N, bool cnstTopo) {
+void ConstSphere(BaseMesh& VBasisMesh, int N1, int N2, bool cnstTopo) {
 
 	VBasisMesh.request_face_normals();
 	VBasisMesh.request_face_colors();
 	VBasisMesh.request_vertex_normals();
 
-	int n1 = N, n2 = N, vId;
-	const int t = n1*(n2 - 1) + 2;
+	int n1 = N1, n2 = N2, vId;
+	const int t = n2*(n1 - 1) + 2;
 	BaseMesh::VertexHandle *vhandle = new BaseMesh::VertexHandle[t];
 	vhandle[0] = VBasisMesh.add_vertex(BaseMesh::Point(0.0, 0.0, 1.0));
 	for (int i = 1; i < n1; ++i) {//(i*pi/n1, j*2pi/n2)
@@ -201,4 +202,19 @@ void ConstSphere(BaseMesh& VBasisMesh, int N, bool cnstTopo) {
 		VBasisMesh.update_vertex_normals();
 	}
 	delete[] vhandle;
+}
+
+
+void SaveMatrixToPicture(Eigen::MatrixXf data, std::string name) 
+{
+	data.maxCoeff();
+	float min=data.minCoeff(),max=data.maxCoeff();
+
+	cv::Mat img;
+	//convert eigen to mat
+	data.array() -= min;
+	data.array() *= 255 / (max - min);
+	cv::eigen2cv(data, img);
+	cv::imwrite(name, img);
+
 }

@@ -216,6 +216,8 @@ void AppMesh::ColorMapping(float* data, float minval, float maxval) {
 	std::cout << maxval - minval << std::endl;
 	OpenMesh::Vec3uc maxColor(255, 0, 0), minColor(0, 0, 255);
 	typename BaseMesh::ConstVertexIter vIt(mesh_.vertices_begin()), vEnd(mesh_.vertices_end());
+	if ((maxval - minval) / maxval < 1e-4)
+		maxval = minval;
 
 	for (; vIt != vEnd; ++vIt) {
 		mesh_.set_color(*vIt, convert_color(data[vIt->idx()], minval, maxval, minColor, maxColor));
@@ -225,8 +227,9 @@ void AppMesh::ColorMapping(float* data, float minval, float maxval) {
 //computing conformal structures of surfaces
 void AppMesh::sphereConformalMapping(VPropHandleT<Vec3f> &newPts) {
 	//parameter
-	double steplen = 1e-2;
-	const double threshold1 = 1e-3, threshold2 = 1e-3;
+	double steplen = 1e-3;
+	const double threshold1 = 1e-5, threshold2 = 1e-3;
+	bool printInfo = false;
 
 
 	OpenMesh::VPropHandleT<Vec3f> Laplace;
@@ -262,14 +265,15 @@ void AppMesh::sphereConformalMapping(VPropHandleT<Vec3f> &newPts) {
 			for (vvIt = mesh_.vv_begin(*vIt); vvIt.is_valid(); ++vvIt) {
 				mesh_.property(Laplace, *vIt) += mesh_.property(newPts, *vIt) - mesh_.property(newPts, *vvIt);
 			}
+			mesh_.property(Laplace, *vIt).normalize();
 		}
 
 		//Steepest Descendent 
 		for (vIt = mesh_.vertices_begin(); vIt != vEnd; ++vIt) {
 			Vec3f* newPoints = &mesh_.property(newPts, *vIt);
-			Pt = (mesh_.property(Laplace, *vIt)- *newPoints*dot(mesh_.property(Laplace, *vIt),*newPoints))*steplen;
-			*newPoints -= Pt;
-			(*newPoints).normalize();
+			Pt = mesh_.property(Laplace, *vIt)- (*newPoints)*dot(*newPoints,mesh_.property(Laplace, *vIt));
+			*newPoints -= Pt*steplen;
+			(*newPoints).normalize();//for points on the unit sphere, the normals are themselves
 		}
 
 
@@ -282,13 +286,26 @@ void AppMesh::sphereConformalMapping(VPropHandleT<Vec3f> &newPts) {
 			}
 				
 		//update
-		//std::cout << "Energy difference: " <<newE-oldE<< std::endl;
+		if(printInfo)
+			std::cout << "Energy difference: " <<newE-oldE<< ". Energe is: "<<newE<<std::endl;
 		if (fabs(newE - oldE) < threshold1)
 			break;
 		
 		oldE = newE;
 	}
 //============================ spherical conformal mapping  ====================================================
+
+	OpenMesh::HPropHandleT<float> Edgekuv;
+	mesh_.add_property(Edgekuv);
+	float alpha,beta;
+	for (auto ht : mesh_.halfedges()) {
+		alpha = computeCot(mesh_, ht);
+		beta = computeCot(mesh_, mesh_.opposite_halfedge_handle(ht));
+		mesh_.property(Edgekuv, ht)=0.5*(alpha+beta);
+	}
+		
+	steplen = 1e-3;
+	float kuv;
 	std::cout << "Begin spherical conformal mapping" << std::endl;
 	BaseMesh::VertexFaceIter vfIt; 
 	BaseMesh::VertexOHalfedgeIter voheIt;
@@ -299,14 +316,16 @@ void AppMesh::sphereConformalMapping(VPropHandleT<Vec3f> &newPts) {
 		for (vIt = mesh_.vertices_begin(); vIt != vEnd; ++vIt) {
 			mesh_.property(Laplace, *vIt).vectorize(0.0f);
 			for (vvIt = mesh_.vv_begin(*vIt); vvIt.is_valid(); ++vvIt) {
-				mesh_.property(Laplace, *vIt) += mesh_.property(newPts, *vIt) - mesh_.property(newPts, *vvIt);
+				kuv = mesh_.property(Edgekuv, vvIt.current_halfedge_handle());
+				mesh_.property(Laplace, *vIt) += (mesh_.property(newPts, *vIt) - mesh_.property(newPts, *vvIt))*kuv;
 			}
+			mesh_.property(Laplace, *vIt).normalize();
 		}
 		//Steepest Descendent
 		for (vIt = mesh_.vertices_begin(); vIt != vEnd; ++vIt) {
 			Vec3f *newPoints = &mesh_.property(newPts, *vIt);
-			Pt = (mesh_.property(Laplace, *vIt) - *newPoints*dot(mesh_.property(Laplace, *vIt), *newPoints))*steplen;
-			*newPoints -= Pt;
+			Pt = mesh_.property(Laplace, *vIt) - *newPoints*dot(mesh_.property(Laplace, *vIt), *newPoints);
+			*newPoints -= Pt*steplen;
 			(*newPoints).normalize();
 		}
 		//harmonic mass Center
@@ -331,21 +350,23 @@ void AppMesh::sphereConformalMapping(VPropHandleT<Vec3f> &newPts) {
 		for (vIt = mesh_.vertices_begin(); vIt != vEnd; ++vIt)
 			for (vvIt = mesh_.vv_begin(*vIt); vvIt.is_valid(); ++vvIt) {
 				tmp = mesh_.property(newPts, *vIt) - mesh_.property(newPts, *vvIt);
-				newE += sqrnorm(tmp) * 1;
+				kuv = mesh_.property(Edgekuv, vvIt.current_halfedge_handle());
+				newE += sqrnorm(tmp) * kuv;
 			}
 
+		if(printInfo)
+			std::cout << "Har Energy difference: " << newE - oldE << ". Energe is: " << newE << std::endl;
 		if (fabs(newE - oldE) < threshold2)
 			break;
 		oldE = newE;
 	}
-	
 	mesh_.remove_property(Laplace);
 	//==============================
 
-	/*for (vIt = mesh_.vertices_begin(); vIt != vEnd; ++vIt)
+	for (vIt = mesh_.vertices_begin(); vIt != vEnd; ++vIt)
 	{
 		mesh_.point(*vIt) = mesh_.property(newPts, *vIt);
-	}*/
+	}
 
 }
 
@@ -413,4 +434,33 @@ void AppMesh::sphericalPara(VPropHandleT<Vec3f> &newPts, BaseMesh& VBasisMesh, f
 	}
 	mesh_.remove_property(centroids);
 	//mesh_.remove_property(newPts);
+}
+
+//Color mapping of the sphere by Inverse of the conformal mapping
+void AppMesh::sphericalParaDense(VPropHandleT<Vec3f> &newPts, BaseMesh& VBasisMesh, Eigen::MatrixXf vals, Eigen::MatrixXf& sphereVals) {
+
+	BaseMesh::VertexIter vIt;
+	BaseMesh::FaceIter fIt;
+
+	FPropHandleT<Vec3f> centroids;
+	mesh_.add_property(centroids);
+
+	for (fIt = mesh_.faces_begin(); fIt != mesh_.faces_end(); ++fIt) {//after mapping, the region of each tri
+		mesh_.property(centroids, *fIt) = calc_conformalCentroid(mesh_, newPts, fIt.handle());
+	}
+
+	float min = 100000, tmp;
+	BaseMesh::FaceHandle facebel;
+	for (vIt = VBasisMesh.vertices_begin(); vIt != VBasisMesh.vertices_end(); ++vIt) {//the corresponding tri of each vertex
+		min = 100000;
+		for (fIt = mesh_.faces_begin(); fIt != mesh_.faces_end(); ++fIt) {
+			tmp = sqrnorm(VBasisMesh.point(*vIt) - mesh_.property(centroids, *fIt));
+			if (tmp < min) { min = tmp; facebel = fIt.handle(); }
+		}
+		for (int row = 0; row < vals.cols(); ++row) {
+			sphereVals(row, vIt->idx())= barycentricValue(mesh_, newPts, vals.col(row).data(), facebel, VBasisMesh.point(*vIt));
+		}
+			
+	}
+	mesh_.remove_property(centroids);
 }
