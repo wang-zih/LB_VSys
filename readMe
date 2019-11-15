@@ -1,0 +1,4 @@
+The program is implemented on VS2015, Qt library and openmesh, eigen is also needed.
+The main content of this program is about shape descriptors extraction on 3d surface，
+  which is the front part for 3d shape retrieval, and Laplace-Beltrami operator, V transform are the main tool.
+Input mesh should be near manifold. 
